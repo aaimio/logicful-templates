@@ -1,13 +1,17 @@
 import prettier from 'prettier';
-import { Window } from 'happy-dom';
+import { IComment, Window } from 'happy-dom';
 import Fragment from './components/Fragment';
 
 import type { Document, IElement } from 'happy-dom';
-import type { Children, Options, Props } from './types';
+import type { Child, Children, Options, Props } from './types';
 
-let domDocument: Document = new Window().document;
+export const createDOMDocument = () => {
+  return new Window().document;
+};
 
-const createElementAttribute = (element: IElement, name: string, value: string | number | boolean) => {
+export let domDocument = createDOMDocument();
+
+export const createElementAttribute = (element: IElement, name: string, value: string | number | boolean) => {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     if (value === true) {
       element.setAttribute(name, '');
@@ -19,7 +23,7 @@ const createElementAttribute = (element: IElement, name: string, value: string |
   }
 };
 
-const createElementAttributesFromProps = (element: IElement, props: Props): void => {
+export const createElementAttributesFromProps = (element: IElement, props: Props): void => {
   const attributeNames = Object.keys(props || {});
 
   for (let i = 0; i < attributeNames.length; i++) {
@@ -48,13 +52,17 @@ const createElementAttributesFromProps = (element: IElement, props: Props): void
   }
 };
 
-const createElementChildren = (element: IElement, children: Children): void => {
-  if (!children) {
+export const createElementChildren = (element: IElement, children: Child | Children): void => {
+  if (children == undefined || children === null) {
     return;
   }
 
-  if (typeof children === 'string' || typeof children === 'number' || typeof children === 'boolean') {
+  if (typeof children === 'string' || typeof children === 'number') {
     const textNode = domDocument.createTextNode(`${children}`);
+    element.appendChild(textNode);
+  } else if (typeof children === 'boolean') {
+    const value = new Boolean(children);
+    const textNode = domDocument.createTextNode(value.toString());
     element.appendChild(textNode);
   } else if (Array.isArray(children)) {
     for (let i = 0; i < children.length; i++) {
@@ -67,7 +75,7 @@ const createElementChildren = (element: IElement, children: Children): void => {
 
 export const createElement = (
   tagNameOrCreateFunction: string | ((props: Props, domDocument: Document) => IElement),
-  props: { children?: Children } & Props = { children: [] }
+  props: { children: Children } & Props = { children: [] }
 ): IElement => {
   if (typeof tagNameOrCreateFunction === 'function') {
     return tagNameOrCreateFunction(props, domDocument);
@@ -82,7 +90,7 @@ export const createElement = (
 };
 
 export const compileTemplate = (
-  elementCreatorFn: () => IElement | IElement[] | string,
+  elementCreatorFn: () => IElement | IComment | (IElement | IComment)[],
   compileOptions: Options = {}
 ) => {
   const mergedOptions: Options = {
@@ -92,7 +100,7 @@ export const compileTemplate = (
     ...compileOptions,
   };
 
-  domDocument = new Window().document;
+  domDocument = createDOMDocument();
 
   const elementOrElements = elementCreatorFn();
   const elements = Array.isArray(elementOrElements) ? elementOrElements : [elementOrElements];
@@ -106,12 +114,10 @@ export const compileTemplate = (
       continue;
     }
 
-    if (typeof element === 'string') {
-      output += element;
-    } else if (element.nodeType === 8 /* COMMENT_NODE */) {
+    if (element.nodeType === 8 /* COMMENT_NODE */) {
       output += `<!-- ${element.nodeValue} -->`;
-    } else {
-      output += element.outerHTML;
+    } else if (element.nodeType === 1 /* ELEMENT_NODE */) {
+      output += (element as IElement).outerHTML;
     }
   }
 
