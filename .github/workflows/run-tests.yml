@@ -1,0 +1,18 @@
+name: Run tests on incoming PR
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+    paths:
+      - "src/**"
+jobs:
+  run_tests:
+    if: github.repository == 'aaimio/logicful-templates' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup node
+        with:
+          node-version: "14"
+      - name: Run tests
+        run: npm run test
