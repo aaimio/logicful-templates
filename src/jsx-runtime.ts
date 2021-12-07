@@ -53,7 +53,7 @@ export const createElementAttributesFromProps = (element: IElement, props: Props
 };
 
 export const createElementChildren = (element: IElement, children: Child | Children): void => {
-  if (children == undefined || children === null) {
+  if (children == undefined || children === null || false) {
     return;
   }
 
