@@ -1,26 +1,24 @@
-import type { Document } from 'happy-dom';
+import type { Document, IComment } from 'happy-dom';
 import type { Component } from '..';
 
-const Comment: Component = ({ children }, domDocument: Document) => {
-  let comment: string | null = null;
+const Comment: Component = ({ children }, domDocument: Document): IComment | null => {
+  const contents: string[] = [];
 
-  if (Array.isArray(children)) {
-    const contents: string[] = [];
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
 
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i];
-
-      if (typeof child === 'string' || typeof child === 'number' || typeof child === 'boolean') {
-        contents.push(`${child}`);
-      }
+    if (typeof child === 'string' || typeof child === 'number') {
+      contents.push(`${child}`);
+    } else if (typeof child === 'boolean') {
+      contents.push(new Boolean(child).toString());
     }
-
-    comment = contents.join('');
-  } else if (typeof children === 'string' || typeof children === 'number' || typeof children === 'boolean') {
-    comment = children;
   }
 
-  return comment ? domDocument.createComment(comment) : null;
+  if (contents.length > 0) {
+    return domDocument.createComment(contents.join(''));
+  }
+
+  return null;
 };
 
 export default Comment;

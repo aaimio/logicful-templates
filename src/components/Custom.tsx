@@ -3,7 +3,7 @@ import type { Component } from '..';
 
 export interface CustomElementProps {
   tagName: string;
-  [key: string]: string | number | boolean;
+  [key: string]: any;
 }
 
 const Custom: Component<CustomElementProps> = (props) => {

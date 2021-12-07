@@ -1,11 +1,11 @@
 import type { Document, IComment, IElement } from 'happy-dom';
 import type { Options as PrettyOptions } from 'prettier';
 
-export type Props = {
-  [key: string]: any;
-};
+export type Props = { [key: string]: any };
 
-export type Children = IElement | IElement[] | IComment | undefined;
+export type Child = IElement | IComment | string | number | boolean;
+
+export type Children = Child[];
 
 export type Options = {
   addDocType?: boolean;
@@ -14,6 +14,6 @@ export type Options = {
 };
 
 export type Component<T extends {} = {}> = (
-  props: { children?: Children } & T,
+  props: { children: Children } & T,
   domDocument: Document
 ) => IElement | IComment | null;
