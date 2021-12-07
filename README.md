@@ -113,9 +113,7 @@ If you're using TypeScript, please ensure you're using a version higher than 4.1
 }
 ```
 
-For a working example, please check out the example TypeScript repository:
-
-- https://github.com/aaimio/logicful-templates-example-ts
+For a working example, check out the [example TypeScript repository](https://github.com/aaimio/logicful-templates-example-ts)
 
 ### JavaScript + Babel
 
@@ -135,9 +133,7 @@ If you're using plain JavaScript we'll need to add an extra step to transpile th
 }
 ```
 
-For a working example, please check out the example JavaScript repository:
-
-- https://github.com/aaimio/logicful-templates-example-js
+For a working example, check out the [example JavaScript repository](https://github.com/aaimio/logicful-templates-example-js).
 
 ### Function overview
 
@@ -294,10 +290,10 @@ const MyComponent = () => {
 
 ## Compiling your templates
 
-At this time there is no CLI provided (please let me know if that would be useful), for now you could write a simple node script to compile all of your templates. Please see repositories below for examples on how to compile your templates:
+At this time there is no CLI provided (please let me know if that would be useful), for now you could write a simple node script to compile all of your templates. Please see these template repositories below to learn how to compile your templates:
 
-- https://github.com/aaimio/logicful-templates-example-ts
-- https://github.com/aaimio/logicful-templates-example-js
+- [TypeScript example](https://github.com/aaimio/logicful-templates-example-ts)
+- [JavaScript example](https://github.com/aaimio/logicful-templates-example-js)
 
 ## Bring your own types
 
