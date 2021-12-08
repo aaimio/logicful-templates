@@ -1,5 +1,7 @@
 # Logicful templates
 
+[![codecov](https://codecov.io/gh/aaimio/logicful-templates/branch/master/graph/badge.svg?token=9R5TVD0BA6)](https://codecov.io/gh/aaimio/logicful-templates) ![build](https://github.com/aaimio/logicful-templates/actions/workflows/build.yml/badge.svg)
+
 A library allowing you to build HTML templates using JSX.
 
 JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using the power of JSX we can build logicful HTML templates.
