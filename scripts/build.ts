@@ -141,7 +141,7 @@ const rewriteAndCopyTSConfig = () => {
 
 const copyReadme = () => {
   return new Promise<void>((resolve, reject) => {
-    const readmePath = path.resolve(rootPath, 'README.md');
+    const readmePath = path.resolve(rootPath, 'docs', 'README.md');
     const outputReadmePath = path.resolve(distPath, 'README.md');
 
     fs.copyFile(readmePath, outputReadmePath, (error) => {

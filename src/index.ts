@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { compileTemplate, createElement } from './jsx-runtime';
 import Comment from './components/Comment';
 import Custom from './components/Custom';
