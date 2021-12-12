@@ -6,9 +6,9 @@ describe('<Fragment> "component"', () => {
     const props = { children: ['Hello', 'World'] };
     const result = Fragment(props);
     expect(Array.isArray(result)).toBe(true);
-    expect((result as Children).length).toBe(2);
-    expect((result as Children)[0]).toBe('Hello');
-    expect((result as Children)[1]).toBe('World');
+    expect((result as Children)!.length).toBe(2);
+    expect((result as Children)![0]).toBe('Hello');
+    expect((result as Children)![1]).toBe('World');
   });
 
   it('returns null if children is not set', () => {

@@ -5,7 +5,7 @@ export type Props = { [key: string]: any };
 
 export type Child = IElement | IComment | string | number | boolean;
 
-export type Children = Child[];
+export type Children = Child[] | undefined;
 
 export type Options = {
   addDocType?: boolean;
@@ -14,6 +14,6 @@ export type Options = {
 };
 
 export type Component<T extends {} = {}> = (
-  props: { children: Children } & T,
+  props: { children?: Children } & T,
   domDocument: Document
 ) => IElement | IComment | null;

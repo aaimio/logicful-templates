@@ -2,6 +2,10 @@ import type { Document, IComment } from 'happy-dom';
 import type { Component } from '..';
 
 const Comment: Component = ({ children }, domDocument: Document): IComment | null => {
+  if (!children) {
+    return null;
+  }
+
   const contents: string[] = [];
 
   for (let i = 0; i < children.length; i++) {

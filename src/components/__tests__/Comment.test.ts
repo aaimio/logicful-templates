@@ -16,4 +16,10 @@ describe('<Comment> "component"', () => {
     const result = Comment(props, domDocument);
     expect(result).toBeNull();
   });
+
+  it('returns null if children is undefined', () => {
+    const props = {};
+    const result = Comment(props, domDocument);
+    expect(result).toBeNull();
+  });
 });

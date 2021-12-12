@@ -75,7 +75,7 @@ export const createElementChildren = (element: IElement, children: Child | Child
 
 export const createElement = (
   tagNameOrCreateFunction: string | ((props: Props, domDocument: Document) => IElement),
-  props: { children: Children } & Props = { children: [] }
+  props: { children?: Children } & Props = { children: [] }
 ): IElement => {
   if (typeof tagNameOrCreateFunction === 'function') {
     return tagNameOrCreateFunction(props, domDocument);
