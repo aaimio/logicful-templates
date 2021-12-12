@@ -6,6 +6,8 @@ A library allowing you to build HTML templates using JSX.
 
 JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using the power of JSX we can build logicful HTML templates.
 
+- [Use it to create AMP emails](https://gist.github.com/aaimio/94a671e40c7a20f14697f9cb1975551c)
+
 ```TSX
 const Template = () => {
   const employees = [
@@ -115,7 +117,7 @@ If you're using TypeScript, please ensure you're using a version higher than 4.1
 }
 ```
 
-For a working example, check out the [example TypeScript repository](https://github.com/aaimio/logicful-templates-example-ts)
+For a working example, check out the [example TypeScript repository](https://github.com/aaimio/logicful-templates-example-ts).
 
 ### JavaScript + Babel
 
@@ -123,6 +125,7 @@ If you're using plain JavaScript we'll need to add an extra step to transpile th
 
 ```JSON
 {
+  "presets": ["@babel/preset-env"],
   "plugins": [
     [
       "@babel/plugin-transform-react-jsx",
@@ -299,30 +302,30 @@ At this time there is no CLI provided (please let me know if that would be usefu
 
 ## Bring your own types
 
-Typings for all the standard HTML elements and attributes are shipped with the library. However, you could easily extend or overwrite these by defining your own in a separate `*.d.ts` file.
+Typings for all the standard HTML elements and attributes are shipped with the library. You can load these as per below (behaviour depends on your IDE):
+
+- For TypeScript projects, add `"types": ["./node_modules/logicful-templates/typings/html"]` to your `compilerOptions` in `tsconfig.json`
+- For JavaScript projects, add an import at the top of your `template.jsx`, i.e. `import 'logicful-templates/typings/html'`
+
+However, you could easily extend or overwrite these by defining your own types in a separate `*.d.ts` file.
 
 ```TS
 declare module JSX {
   export interface IntrinsicElements {
-    'custom-element': {
+    'my-custom-element': {
       src: string,
     }
   }
 }
 ```
 
-You could also allow ANY elements and attributes by specifying a `d.ts` file as per below.
+You could also allow ANY elements and attributes by loading the `flexible.d.ts` file
 
-```TS
-declare module JSX {
-  export interface IntrinsicElements {
-    [key: string]: any;
-  }
-}
-```
+- For TypeScript projects, add `"types": ["./node_modules/logicful-templates/typings/flexible"]` to your `compilerOptions` in `tsconfig.json`
+- For JavaScript projects, add an import at the top of your `template.jsx`, i.e. `import 'logicful-templates/typings/flexible'`
 
 ## Things to note
 
 - The syntax is very similar to that of React but keep these gotchas in mind:
   - Props are meant to be equal to their HTML attribute equivalents, i.e. don't use `className`, just use `class`
-  - `compileTemplate` takes a callback that returns an HTML element, so use `compileTemplate(() => <Component />)` instead of `compileTemplate(<Component />)`
+  - `compileTemplate` is similar to React's `render` function, but it takes a callback that returns an HTML element (rather than executing the component right away), so use `compileTemplate(() => <Component />)` instead of `compileTemplate(<Component />)`
