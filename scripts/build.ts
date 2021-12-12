@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import fs, { copy } from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
 import rimraf from 'rimraf';
 
@@ -85,31 +85,6 @@ const rewriteAndCopyPackageJson = () => {
   });
 };
 
-const appendGlobalDeclarationsToIndexDTS = () => {
-  return new Promise<void>((resolve, reject) => {
-    const typingsPath = path.resolve(rootPath, 'typings', 'jsx.d.ts');
-
-    fs.readFile(typingsPath, (readError, data) => {
-      if (readError) {
-        reject(readError);
-        return;
-      }
-
-      const indexDTSPath = path.resolve(distPath, 'index.d.ts');
-
-      fs.appendFile(indexDTSPath, data, (appendError) => {
-        if (appendError) {
-          reject(appendError);
-          return;
-        }
-      });
-
-      console.log('Appended global declarations to index.d.ts');
-      resolve();
-    });
-  });
-};
-
 const rewriteAndCopyTSConfig = () => {
   return new Promise<void | NodeJS.ErrnoException>((resolve, reject) => {
     const tsconfigPath = path.resolve(rootPath, 'tsconfig.json');
@@ -139,30 +114,38 @@ const rewriteAndCopyTSConfig = () => {
   });
 };
 
-const copyReadme = () => {
-  return new Promise<void>((resolve, reject) => {
-    const readmePath = path.resolve(rootPath, 'docs', 'README.md');
-    const outputReadmePath = path.resolve(distPath, 'README.md');
+const copyFiles = () => {
+  const filePaths = [
+    { source: path.resolve(rootPath, 'docs', 'README.md'), destination: path.resolve(distPath, 'README.md') },
+    {
+      source: path.resolve(rootPath, 'typings', 'html.d.ts'),
+      destination: path.resolve(distPath, 'typings', 'html.d.ts'),
+    },
+  ];
 
-    fs.copyFile(readmePath, outputReadmePath, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
+  return Promise.all(
+    filePaths.map((filePath) => {
+      return new Promise<void>((resolve, reject) => {
+        fs.copy(filePath.source, filePath.destination, (error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
 
-      console.log('Copied README.md');
-      resolve();
-    });
-  });
+          console.log('Copied ' + filePath.source + ' -> ' + filePath.destination);
+          resolve();
+        });
+      });
+    })
+  );
 };
 
 const run = async () => {
   await cleanDistFolder();
   await compileFilesWithTSC();
   await rewriteAndCopyTSConfig();
-  await appendGlobalDeclarationsToIndexDTS();
   await rewriteAndCopyPackageJson();
-  await copyReadme();
+  await copyFiles();
 };
 
 run();
