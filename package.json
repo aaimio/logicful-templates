@@ -1,6 +1,6 @@
 {
   "name": "logicful-templates",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A library allowing you to build HTML templates using JSX",
   "repository": {
     "type": "git",
