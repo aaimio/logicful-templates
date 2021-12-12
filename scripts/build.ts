@@ -119,7 +119,11 @@ const copyFiles = () => {
     { source: path.resolve(rootPath, 'docs', 'README.md'), destination: path.resolve(distPath, 'README.md') },
     {
       source: path.resolve(rootPath, 'typings', 'html.d.ts'),
-      destination: path.resolve(distPath, 'typings', 'html.d.ts'),
+      destination: path.resolve(distPath, 'typings', 'html', 'index.d.ts'),
+    },
+    {
+      source: path.resolve(rootPath, 'typings', 'flexible.d.ts'),
+      destination: path.resolve(distPath, 'typings', 'flexible', 'index.d.ts'),
     },
   ];
 

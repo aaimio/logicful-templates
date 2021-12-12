@@ -1,3 +1,5 @@
+export {};
+
 declare global {
   namespace JSX {
     interface AriaAttributes {
