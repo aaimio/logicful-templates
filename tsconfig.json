@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "jsx": "react",
-    "jsxFactory": "LogicfulTemplates.createElement",
-    "jsxFragmentFactory": "LogicfulTemplates.Fragment",
+    "jsx": "react-jsx",
+    "jsxImportSource": "logicful-templates",
     "module": "commonjs",
     "lib": ["ES6"],
     "esModuleInterop": true,
@@ -13,8 +12,5 @@
     "declaration": true,
     "outDir": "./dist"
   },
-  "files": ["./src/index.ts", "./typings/jsx.d.ts"],
-  "ts-node": {
-    "files": true
-  }
+  "files": ["./src/index.ts"]
 }
