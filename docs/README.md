@@ -109,11 +109,15 @@ If you're using TypeScript, please ensure you're using a version higher than 4.1
 ```JSON
 {
   "compilerOptions": {
+    "target": "ES6",
     "jsx": "react-jsx",
     "jsxImportSource": "logicful-templates",
-    "types": ["logicful-templates"],
-    //...
-  }
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "types": ["./node_modules/logicful-templates/typings/html"],
+  },
 }
 ```
 
