@@ -32,13 +32,8 @@ const compileFilesWithTSC = () => {
     const command = 'tsc';
     const tsc = spawn(command);
 
-    tsc.stdout.on('data', (data) => {
-      console.log(data.toString());
-    });
-
-    tsc.stderr.on('data', (data) => {
-      console.error(data.toString());
-    });
+    tsc.stdout.on('data', (data) => console.log(data.toString()));
+    tsc.stderr.on('data', (data) => console.error(data.toString()));
 
     tsc.on('exit', (code) => {
       if (typeof code === 'number' && code > 0) {
@@ -117,14 +112,6 @@ const rewriteAndCopyTSConfig = () => {
 const copyFiles = () => {
   const filePaths = [
     { source: path.resolve(rootPath, 'docs', 'README.md'), destination: path.resolve(distPath, 'README.md') },
-    {
-      source: path.resolve(rootPath, 'typings', 'html.d.ts'),
-      destination: path.resolve(distPath, 'typings', 'html', 'index.d.ts'),
-    },
-    {
-      source: path.resolve(rootPath, 'typings', 'flexible.d.ts'),
-      destination: path.resolve(distPath, 'typings', 'flexible', 'index.d.ts'),
-    },
   ];
 
   return Promise.all(

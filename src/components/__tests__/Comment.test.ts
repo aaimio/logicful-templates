@@ -1,25 +1,33 @@
-import { IComment } from 'happy-dom';
-import { domDocument } from '../../jsx-runtime';
-import Comment from '../Comment';
+import { createElement } from 'react';
+import LogicfulTemplates, { Comment } from '../..';
 
 describe('<Comment> "component"', () => {
   it('returns a <Comment> component', () => {
-    const props = { children: ['hello', 1, false, true] };
-    const result = Comment(props, domDocument);
-    expect(result).toBeDefined();
-    expect((result as IComment).nodeType).toBe(8 /* COMMENT_NODE */);
-    expect((result as IComment).nodeValue).toBe('hello1falsetrue');
+    const props1 = { children: 'Hello World' };
+    const CommentElement1 = createElement(Comment, props1);
+    const result1 = LogicfulTemplates.compileTemplate(CommentElement1);
+    expect(result1).toBe('<!-- Hello World -->');
+
+    const props2 = { children: true };
+    const CommentElement2 = createElement(Comment, props2);
+    const result2 = LogicfulTemplates.compileTemplate(CommentElement2);
+    expect(result2).toBe('<!-- true -->');
+
+    const props3 = { children: 1337 };
+    const CommentElement3 = createElement(Comment, props3);
+    const result3 = LogicfulTemplates.compileTemplate(CommentElement3);
+    expect(result3).toBe('<!-- 1337 -->');
+
+    const props4 = { children: () => createElement('div') };
+    const CommentElement4 = createElement(Comment, props4 as any);
+    const result4 = LogicfulTemplates.compileTemplate(CommentElement4);
+    expect(result4).toBe('');
   });
 
-  it('returns null if children is empty', () => {
-    const props = { children: [] };
-    const result = Comment(props, domDocument);
-    expect(result).toBeNull();
-  });
-
-  it('returns null if children is undefined', () => {
-    const props = {};
-    const result = Comment(props, domDocument);
-    expect(result).toBeNull();
+  it('does not replace "<logicful-templates-comment>" if they\'re not elements', () => {
+    const props1 = { children: '<logicful-templates-comment>Oops</logicful-templates-comment>' };
+    const CommentElement1 = createElement(Comment, props1);
+    const result1 = LogicfulTemplates.compileTemplate(CommentElement1);
+    expect(result1).toBe('<!-- &lt;logicful-templates-comment&gt;Oops&lt;/logicful-templates-comment&gt; -->');
   });
 });
