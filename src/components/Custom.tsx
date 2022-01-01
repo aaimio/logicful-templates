@@ -1,14 +1,14 @@
-import LogicfulTemplates from '..';
-import type { Component } from '..';
+import { createElement } from 'react';
+import type { FunctionComponent } from 'react';
 
 export interface CustomElementProps {
   tagName: string;
   [key: string]: any;
 }
 
-const Custom: Component<CustomElementProps> = (props) => {
-  const targetProps = { ...props, tagName: undefined };
-  return LogicfulTemplates.createElement(props.tagName, targetProps);
+const Custom: FunctionComponent<CustomElementProps> = (props) => {
+  const { tagName, ...otherProps } = props;
+  return createElement(tagName, otherProps);
 };
 
 export default Custom;

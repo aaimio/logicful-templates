@@ -1,13 +1,11 @@
-import Custom from '../Custom';
-import { domDocument } from '../../jsx-runtime';
-import { IElement } from 'happy-dom';
+import { createElement } from 'react';
+import LogicfulTemplates, { Custom } from '../..';
 
 describe('<Custom> "component"', () => {
   it('returns a <Custom> component', () => {
-    const props = { children: ['hello'], tagName: 'div' };
-    const result = Custom(props, domDocument);
-    expect(result).toBeDefined();
-    expect((result as IElement).tagName).toBe('DIV');
-    expect((result as IElement).outerHTML).toBe('<div>hello</div>');
+    const props1 = { children: ['hello'], tagName: 'custom-element' };
+    const CustomElement1 = createElement(Custom, props1);
+    const result1 = LogicfulTemplates.compileTemplate(CustomElement1);
+    expect(result1).toBe('<custom-element>hello</custom-element>');
   });
 });

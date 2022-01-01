@@ -2,11 +2,16 @@
 
 [![codecov](https://codecov.io/gh/aaimio/logicful-templates/branch/master/graph/badge.svg?token=9R5TVD0BA6)](https://codecov.io/gh/aaimio/logicful-templates) ![build](https://github.com/aaimio/logicful-templates/actions/workflows/build.yml/badge.svg)
 
-A library allowing you to build HTML templates using JSX.
+A library allowing you to build HTML templates using React JSX.
 
-JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using the power of JSX we can build logicful HTML templates.
+JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using React JSX we can build logicful HTML templates.
+
+**Example use case**
 
 - [Use it to create AMP emails](https://gist.github.com/aaimio/94a671e40c7a20f14697f9cb1975551c)
+
+<details>
+  <summary>Show example</summary>
 
 ```TSX
 const Template = () => {
@@ -18,27 +23,25 @@ const Template = () => {
   ];
 
   return (
-    <>
-      <html lang='en'>
-        <head>
-          <title>An example JSX template</title>
-          <meta charset='UTF-8' />
-          <script type='text/javascript' $innerHTML='alert("An in-your-face message!")' />
-        </head>
-        <body>
-          <div class='employees'>
-            {employees.map((employee) => (
-              <div class='employee'>
-                <div class='name'>
-                  {employee.name}, {employee.age}
-                </div>
-                <div class='title'>{employee.title}</div>
+    <html lang='en'>
+      <head>
+        <title>An example JSX template</title>
+        <meta charSet='UTF-8' />
+        <script type='text/javascript' dangerouslySetInnerHTML={{ __html: 'alert("An in-your-face message!")' }} />
+      </head>
+      <body>
+        <div className='employees'>
+          {employees.map((employee) => (
+            <div key={employee.name} className='employee'>
+              <div className='name'>
+                {employee.name}, {employee.age}
               </div>
-            ))}
-          </div>
-        </body>
-      </html>
-    </>
+              <div className='title'>{employee.title}</div>
+            </div>
+          ))}
+        </div>
+      </body>
+    </html>
   );
 };
 ```
@@ -78,21 +81,21 @@ would compile into
 </html>
 ```
 
+</details>
+
 - [Usage](#usage)
-  - [TypeScript](#typescript)
-  - [JavaScript + Babel](#javascript--babel)
+  - [Setup](#setup)
+    - [TypeScript](#typescript)
+    - [JavaScript + Babel](#javascript--babel)
   - [Function overview](#function-overview)
-    - [`compileTemplate`](#compiletemplate)
-    - [`createElement`](#createelement)
+    - [`compileTemplate`](#-compiletemplate-)
+    - [`registerHook`](#registerhook)
+    - [`unregisterHook`](#unregisterhook)
+    - [`clearAllHooks`](#clearallhooks)
 - [Special components](#special-components)
   - [`<Custom>`](#custom)
   - [`<Comment>`](#comment)
-- [Special props](#special-props)
-  - [`$innerHTML`](#innerhtml)
-  - [`$customAttributes`](#customattributes)
-- [Compiling your templates](#compiling-your-templates)
 - [Bring your own types](#bring-your-own-types)
-- [Things to note](#things-to-note)
 
 ## Usage
 
@@ -102,30 +105,33 @@ Install the library using:
 npm i logicful-templates
 ```
 
-### TypeScript
+### Setup
 
-If you're using TypeScript, please ensure you're using a version higher than 4.1 as we'll be using the [`jsxImportSource`](https://www.typescriptlang.org/tsconfig#jsxImportSource) configuration to load the `logicful-templates` JSX runtime. Add the configuration below to your `tsconfig.json`:
+#### TypeScript
+
+If you're using TypeScript, ensure you're using a version larger than 4.1 as we'll be using the [`jsxImportSource`](https://www.typescriptlang.org/tsconfig#jsxImportSource) configuration to load the `react` JSX runtime.
+
+Add the configuration below to your `tsconfig.json`:
 
 ```JSON
 {
   "compilerOptions": {
     "target": "ES6",
     "jsx": "react-jsx",
-    "jsxImportSource": "logicful-templates",
+    "jsxImportSource": "react",
     "module": "commonjs",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true,
-    "types": ["./node_modules/logicful-templates/typings/html"],
+    "strict": true
   },
 }
 ```
 
-For a working example, check out the [example TypeScript repository](https://github.com/aaimio/logicful-templates-example-ts).
+#### JavaScript + Babel
 
-### JavaScript + Babel
+If you're using plain JavaScript we'll need Babel to transpile the JSX syntax into regular JS.
 
-If you're using plain JavaScript we'll need to add an extra step to transpile the JSX syntax into regular JS (which in turn builds the HTML files). Add the configuration below to your Babel configuration file:
+Add the configuration below to your Babel configuration file:
 
 ```JSON
 {
@@ -135,74 +141,111 @@ If you're using plain JavaScript we'll need to add an extra step to transpile th
       "@babel/plugin-transform-react-jsx",
       {
         "runtime": "automatic",
-        "importSource": "logicful-templates"
+        "importSource": "react"
       }
     ]
   ]
 }
 ```
 
-For a working example, check out the [example JavaScript repository](https://github.com/aaimio/logicful-templates-example-js).
-
 ### Function overview
 
 #### `compileTemplate`
 
-Compiles a component and spits out an HTML file.
+**Compiles a component and spits out an HTML string.**
+
+A function that compiles a React component into a plain HTML string. This is simply a wrapper over `react-dom/server`'s `renderToStaticMarkup` function, allowing us to [specify `before` and `after` compilation hooks](#registerHook).
 
 **Arguments**
 
-- `elementCreatorFn`: A callback that returns an HTML element, this would normally be a component e.g. `<Template />`
-- `compileOptions`: An object taking various compile options:
-  - `addDocType`: Whether to add the `<!DOCTYPE html>` string at the start of the output (default: `true`)
-  - `pretty`: Whether to format the output with [Prettier](https://prettier.io/) (default: `true`)
+- `element`: A `ReactElement` or a function returning a `ReactElement` e.g. `<Template />` or `() => <Template />`
+- `compileOptions`: An object taking various compilation options:
+  - `addDocType`: Whether to add the `<!doctype html>` string at the start of the output (default: `false`)
+  - `pretty`: Whether to format the output with [Prettier](https://prettier.io/) (default: `false`)
   - `prettyOptions`: Custom options for Prettier (see [this page](https://prettier.io/docs/en/options.html)) (default: `{ parser: 'html' }`)
 
-```TS
+Note: If you specify both `addDocType: true` and `pretty: true` the doctype will be formatted as `<!DOCTYPE html>`
+
+```TSX
+import LogicfulTemplates from 'logicful-templates';
+
 const Template = () => (
-  <div>Hello World</div>
+  <div className="greeting">Hello World</div>
 );
 
-const result = compileTemplate(() => <Template />);
+const result = LogicfulTemplates.compileTemplate(<Template />);
+// result: <div class="greeting">Hello World</div>
 
 fs.writeFile("template.html", result, () => {});
 ```
 
-See the repositories below for working examples on how build your templates:
+#### `registerHook`
 
-- https://github.com/aaimio/logicful-templates-example-ts
-- https://github.com/aaimio/logicful-templates-example-js
+**Register a `before` or `after` hook to execute during compilation.**
 
-#### `createElement`
+For example:
 
-Creates an HTML element.
+- Setting the `addDocType` option to `true` registers an `after` hook, ensuring the output starts with `<!doctype html>`
+- Setting the `pretty` option to `true` register an `after` hook, formatting the output HTML before returning it.
+- There is also an "always-on" internal hook called `replaceCommentsHook` that makes it possible to render HTML comments using the `<Comment>` component.
 
-In most cases you won't need to use this function, but it allows you to build custom HTML elements without any restrictions. You can check out the [`<Comment>`](./src/components/Comment.tsx) and [`<Custom>`](./src/components/Custom.tsx) "components" to see how it's being used.
+You can find the source of those hooks below:
 
-**Arguments**
+- [addDocTypeHook](../src/hooks/addDocTypeHook.ts)
+- [createPrettierHook](../src/hooks/createPrettierHook.ts)
+- [replaceCommentsHook](../src/hooks/replaceCommentsHook.ts)
 
-- `createElementFn`: A callback that returns an HTML element. It will be called with the `props` argument and a `document` instance (so you can freely interact with the underlying DOM). In most cases this will be a `<Component />` function, but you could also return a custom HTML element.
-- `props`: The props (or attributes) for the component (this includes `children`)
+If you have a good idea for other hooks, PRs are more than welcome. 🚀
+
+**Registering a `before` hook**
+
+`before` hooks execute before calling `renderToStaticMarkup`, they aren't called with any parameters, but they allow you to execute any type of logic before compilation starts. For example:
 
 ```TS
-const Template = () => (
-  <div>Hello World</div>
-);
+LogicfulTemplates.registerHook('before', () => {
+  console.log('Starting compilation...');
+});
+```
 
-const result = compileTemplate(() => <Template />);
+**Registering an `after` hook**
 
-fs.writeFile("template.html", result, () => {});
+`after` hooks execute after calling `renderToStaticMarkup`, they are called with the output of either that call, or the output of the previously executed `after` hook. For example:
+
+```TS
+LogicfulTemplates.registerHook('after', (html) => {
+  return html.toUpperCase();
+});
+```
+
+#### `unregisterHook`
+
+**Unregisters a hook (by reference)**
+
+```TS
+const someHook = () => { /* Do some magic */ }
+
+LogicfulTemplates.registerHook('before', someHook);
+LogicfulTemplates.unregisterHook('before', someHook);
+```
+
+#### `clearAllHooks`
+
+**Clears all registered hooks**
+
+```TS
+LogicfulTemplates.clearAllHooks();
 ```
 
 ## Special components
 
 ### `<Custom>`
 
-This component provides flexibility by allowing you to specify what the output tag name for an element will be, while also allowing you to specify any type of prop (or attribute) on the element.
+This component provides flexibility by allowing you to specify what the output tag name for an element will be, while also allowing you to specify any type of prop (or attribute) on the element. For example:
 
-```TS
-// Input
-const MyComponent = () => {
+```TSX
+import type { FunctionComponent } from 'react'
+
+const MyComponent: FunctionComponent<{}> = () => {
   return (
     <Custom
       tagName='amp-img'
@@ -215,15 +258,14 @@ const MyComponent = () => {
   )
 }
 
-// Output
-// <amp-img alt="a view of the sea" src="/path/to/img" width="900" height="675" layout="responsive"></amp-img>
+// result: <amp-img alt="a view of the sea" src="/path/to/img" width="900" height="675" layout="responsive"></amp-img>
 ```
 
-You could even write an abstraction over the `<Custom>` component to provide better type hinting for the next person consuming your component.
+You could even write an abstraction over the `<Custom>` component to provide better type hinting for the next person consuming your component. For example:
 
 ```TS
 import { Custom } from 'logicful-templates';
-import type { Component } from 'logicful-templates';
+import type { FunctionComponent } from 'react';
 
 interface AmpImgProps {
   alt: string;
@@ -233,20 +275,21 @@ interface AmpImgProps {
   layout: string;
 }
 
-const AmpImg: Component<AmpImgProps> = (props) => {
+const AmpImg: FunctionComponent<AmpImgProps> = (props) => {
   return <Custom tagName='amp-img' {...props} />;
 };
 ```
 
 ### `<Comment>`
 
-This component provides a way of adding HTML comments to the compiled output.
+This component provides a way of adding HTML comments to the compiled output. You may only specify a `string`, `number`, or `boolean` as a `<Comment>`'s child. For example:
 
-```TS
+```TSX
 import { Comment } from 'logicful-templates';
+import type { FunctionComponent } from 'react';
 
 // Input
-const MyComponent = () => {
+const MyComponent: FunctionComponent<{}> = () => {
   const input = 'World';
 
   return (
@@ -254,82 +297,21 @@ const MyComponent = () => {
       <Comment>Hello {input}</Comment>
     </div>
   )
-}
+};
 
-// Output
-// <div><!-- Hello World --></div>
+// result: <div><!-- Hello World --></div>
 ```
-
-## Special props
-
-### `$innerHTML`
-
-This prop sets an element's `innerHTML` (much like React's [`dangerouslySetInnerHTML`](https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml)).
-
-```TS
-// Input
-const MyComponent = () => {
-  return (
-    <script type="text/javascript" $innerHTML='alert("An in-your-face message!")' />
-  )
-}
-
-// Output
-// <script type="text/javascript">alert("That was logicful!")</script>
-
-```
-
-### `$customAttributes`
-
-Sets custom attributes on the element e.g. for when an attribute is unkown or unsupported.
-
-```TS
-// Input
-const MyComponent = () => {
-  return (
-    <img src='/path/to/img' $customAttributes={{
-      'a_custom_attribute': 'A custom attribute value'
-    }}>
-  )
-}
-
-// Output
-// <img src='/path/to/img' a_custom_attribute='A custom attribute value'>
-```
-
-## Compiling your templates
-
-At this time there is no CLI provided (please let me know if that would be useful), for now you could write a simple node script to compile all of your templates. Please see these template repositories below to learn how to compile your templates:
-
-- [TypeScript example](https://github.com/aaimio/logicful-templates-example-ts)
-- [JavaScript example](https://github.com/aaimio/logicful-templates-example-js)
 
 ## Bring your own types
 
-Typings for all the standard HTML elements and attributes are shipped with the library. You can load these as per below (behaviour depends on your IDE):
-
-- For TypeScript projects, add `"types": ["./node_modules/logicful-templates/typings/html"]` to your `compilerOptions` in `tsconfig.json`
-- For JavaScript projects, add an import at the top of your `template.jsx`, i.e. `import 'logicful-templates/typings/html'`
-
-However, you could easily extend or overwrite these by defining your own types in a separate `*.d.ts` file.
+You could easily extend or overwrite the default JSX types by defining your own types in a separate `*.d.ts` file.
 
 ```TS
 declare module JSX {
   export interface IntrinsicElements {
     'my-custom-element': {
-      src: string,
+      [key: string]: any;
     }
   }
 }
 ```
-
-You could also allow ANY elements and attributes by loading the `flexible.d.ts` file
-
-- For TypeScript projects, add `"types": ["./node_modules/logicful-templates/typings/flexible"]` to your `compilerOptions` in `tsconfig.json`
-- For JavaScript projects, add an import at the top of your `template.jsx`, i.e. `import 'logicful-templates/typings/flexible'`
-
-## Things to note
-
-- The syntax is very similar to that of React but keep these gotchas in mind:
-  - Props are meant to be equal to their HTML attribute equivalents, i.e. don't use `className`, just use `class`
-  - `compileTemplate` is similar to React's `render` function, but it takes a callback that returns an HTML element (rather than executing the component right away), so use `compileTemplate(() => <Component />)` instead of `compileTemplate(<Component />)`
