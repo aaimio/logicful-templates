@@ -81,8 +81,8 @@ would compile into
 
 - [Usage](#usage)
   - [Setup](#setup)
-    - [TypeScript](#typescript)
-    - [JavaScript + Babel](#javascript--babel)
+    - [TypeScript](#typescript-configuration)
+    - [JavaScript + Babel](#javascript--babel-configuration)
   - [Function overview](#function-overview)
     - [`compileTemplate`](#compiletemplate)
     - [`registerHook`](#registerhook)
@@ -95,15 +95,15 @@ would compile into
 
 ## Usage
 
+### Setup
+
 Install the library using:
 
 ```
 npm i logicful-templates
 ```
 
-### Setup
-
-#### TypeScript
+#### TypeScript configuration
 
 If you're using TypeScript, ensure you're using a version larger than 4.1 as we'll be using the [`jsxImportSource`](https://www.typescriptlang.org/tsconfig#jsxImportSource) configuration to load the `react` JSX runtime.
 
@@ -123,7 +123,7 @@ Add the configuration below to your `tsconfig.json`:
 }
 ```
 
-#### JavaScript + Babel
+#### JavaScript + Babel configuration
 
 If you're using plain JavaScript we'll need Babel to transpile the JSX syntax into regular JS.
 
@@ -154,7 +154,7 @@ A function that compiles a React component into a plain HTML string. This is sim
 
 **Arguments**
 
-- `element`: A `ReactElement` or a function returning a `ReactElement` e.g. `<Template />` or `() => <Template />`
+- `element`: A `ReactElement` or a function returning one e.g. `<Template />` or `() => <Template />`
 - `compileOptions`: An object taking various compilation options:
   - `addDocType`: Whether to add the `<!doctype html>` string at the start of the output (default: `false`)
   - `pretty`: Whether to format the output with [Prettier](https://prettier.io/) (default: `false`)
@@ -185,7 +185,7 @@ For example:
 - Setting the `pretty` option to `true` register an `after` hook, formatting the output HTML before returning it.
 - There is also an "always-on" internal hook called `replaceCommentsHook` that makes it possible to render HTML comments using the `<Comment>` component.
 
-You can find the source of those hooks below:
+You can find the source of above hooks below:
 
 - [addDocTypeHook](../src/hooks/addDocTypeHook.ts)
 - [createPrettierHook](../src/hooks/createPrettierHook.ts)
@@ -284,7 +284,6 @@ This component provides a way of adding HTML comments to the compiled output. Yo
 import { Comment } from 'logicful-templates';
 import type { FunctionComponent } from 'react';
 
-// Input
 const MyComponent: FunctionComponent<{}> = () => {
   const input = 'World';
 
@@ -300,13 +299,19 @@ const MyComponent: FunctionComponent<{}> = () => {
 
 ## Bring your own types
 
-You could easily extend or overwrite the default JSX types by defining your own types in a separate `*.d.ts` file.
+You could easily extend the default JSX types by defining your own types in a separate `typings.d.ts` file.
+
+- **Note**: If you're using `ts-node` to compile your templates, make sure to set `"files": true` in your `tsconfig.json`, else you may run into TypeScript errors.
 
 ```TS
-declare module JSX {
-  export interface IntrinsicElements {
-    'my-custom-element': {
-      [key: string]: any;
+export {}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'custom-element': {
+        [key: string]: any;
+      };
     }
   }
 }
