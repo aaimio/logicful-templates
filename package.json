@@ -1,6 +1,6 @@
 {
   "name": "logicful-templates",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A library allowing you to build HTML templates using React JSX",
   "repository": {
     "type": "git",
