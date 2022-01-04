@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { addDocTypeHook, createPrettierHook, replaceCommentsHook } from './hooks';
+import { addDocTypeHook, createPrettierHook, replaceInternalElementsHook } from './hooks';
 
 import type { ReactElement } from 'react';
 import type { Options as PrettierOptions } from 'prettier';
@@ -11,7 +11,7 @@ type AfterHook = (html: string) => string;
 class LogicfulTemplates {
   private currentPrettierHook: AfterHook | null = null;
   private beforeCompileTemplateCallbacks: BeforeHook[] = [];
-  private afterCompileTemplateCallbacks: AfterHook[] = [replaceCommentsHook];
+  private afterCompileTemplateCallbacks: AfterHook[] = [replaceInternalElementsHook];
 
   private executeHooks(timing: Extract<HookTiming, 'before'>): BeforeHook;
   private executeHooks(timing: Extract<HookTiming, 'after'>): AfterHook;
@@ -86,7 +86,7 @@ class LogicfulTemplates {
   public clearAllHooks() {
     this.beforeCompileTemplateCallbacks.length = 0;
     this.afterCompileTemplateCallbacks.length = 0;
-    this.afterCompileTemplateCallbacks.push(replaceCommentsHook);
+    this.afterCompileTemplateCallbacks.push(replaceInternalElementsHook);
   }
 
   public unregisterHook(timing: Extract<HookTiming, 'before'>, callback: BeforeHook): void;
@@ -114,6 +114,22 @@ class LogicfulTemplates {
     if (idx > -1) {
       targetCallbacks.splice(idx, 1);
     }
+  }
+
+  /**
+   * Compiles a template to HTML, without executing any hooks (this excludes internal hooks).
+   * @param element The component to compile, e.g. `<Template />`
+   * @returns The compiled HTML
+   */
+  public compileTemplateWithoutHooks(element: ReactElement | (() => ReactElement)) {
+    const targetElement = typeof element === 'function' ? element() : element;
+
+    let html: string;
+
+    html = renderToStaticMarkup(targetElement);
+    html = replaceInternalElementsHook(html);
+
+    return html;
   }
 
   /**
@@ -154,7 +170,7 @@ class LogicfulTemplates {
     this.executeHooks('before')();
 
     const targetElement = typeof element === 'function' ? element() : element;
-    let html: string = '';
+    let html: string;
 
     html = renderToStaticMarkup(targetElement);
     html = this.executeHooks('after')(html);

@@ -14,7 +14,7 @@ describe('Core tests', () => {
   it('registers an `after` hook', () => {
     const numInternalHooks = 1; // Sticky internal hooks, can't be deleted.
     const afterRegistering = LogicfulTemplates['afterCompileTemplateCallbacks'];
-    expect(afterRegistering.length).toBe(numInternalHooks); // 1 because of internal hook replaceCommentsHook
+    expect(afterRegistering.length).toBe(numInternalHooks); // 1 because of internal hook replaceInternalElementsHook
 
     const numHooksToRegister = Math.floor(Math.random() * 500);
     for (let i = 0; i < numHooksToRegister; i++) LogicfulTemplates.registerHook('after', (input) => input);
@@ -155,5 +155,41 @@ describe('Core tests', () => {
     <div><span class="text">Hello World</span></div>
 </div>
 `);
+  });
+
+  it('compiles a template without hooks', () => {
+    const Template1 = () =>
+      createElement('div', {
+        children: [createElement('div', { children: [createElement('span', { children: ['Hello World'] })] })],
+      });
+    const result1 = LogicfulTemplates.compileTemplateWithoutHooks(createElement(Template1));
+    expect(result1).toBe('<div><div><span>Hello World</span></div></div>');
+
+    const Template2 = () =>
+      createElement('div', {
+        children: [
+          createElement('div', { children: [createElement('span', { children: ['Hello World'], className: 'text' })] }),
+        ],
+      });
+    const result2 = LogicfulTemplates.compileTemplateWithoutHooks(createElement(Template2));
+    expect(result2).toBe('<div><div><span class="text">Hello World</span></div></div>');
+
+    const Template3 = () =>
+      createElement('div', {
+        children: [
+          createElement('div', { children: [createElement('span', { children: ['Hello World'], className: 'text' })] }),
+        ],
+      });
+    const result3 = LogicfulTemplates.compileTemplateWithoutHooks(() => createElement(Template3));
+    expect(result3).toBe(`<div><div><span class="text">Hello World</span></div></div>`);
+
+    const Template4 = () =>
+      createElement('div', {
+        children: [
+          createElement('div', { children: [createElement('span', { children: ['Hello World'], className: 'text' })] }),
+        ],
+      });
+    const result4 = LogicfulTemplates.compileTemplateWithoutHooks(() => createElement(Template4));
+    expect(result4).toBe(`<div><div><span class="text">Hello World</span></div></div>`);
   });
 });

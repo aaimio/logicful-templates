@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/aaimio/logicful-templates/branch/master/graph/badge.svg?token=9R5TVD0BA6)](https://codecov.io/gh/aaimio/logicful-templates) ![build](https://github.com/aaimio/logicful-templates/actions/workflows/build.yml/badge.svg)
 
-A library allowing you to build HTML templates using React JSX.
+A simple library allowing you to build HTML templates using React JSX.
 
 JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using React JSX we can build logicful HTML templates.
 
@@ -89,6 +89,8 @@ would compile into
     - [`unregisterHook`](#unregisterhook)
     - [`clearAllHooks`](#clearallhooks)
 - [Special components](#special-components)
+  - [`<Root>`](#root)
+  - [`<CompileAndTransform>`](#compileandtransform)
   - [`<Custom>`](#custom)
   - [`<Comment>`](#comment)
 - [Bring your own types](#bring-your-own-types)
@@ -163,15 +165,17 @@ A function that compiles a React component into a plain HTML string. This is sim
 Note: If you specify both `addDocType: true` and `pretty: true` the doctype will be formatted as `<!DOCTYPE html>`
 
 ```TSX
+import type { FunctionComponent } from 'react';
 import LogicfulTemplates from 'logicful-templates';
 
-const Template = () => (
+const Template: FunctionComponent<{}> = () => (
   <div className="greeting">Hello World</div>
 );
 
 const result = LogicfulTemplates.compileTemplate(<Template />);
 // result: <div class="greeting">Hello World</div>
 
+// Write output to a file
 fs.writeFile("template.html", result, () => {});
 ```
 
@@ -183,13 +187,13 @@ For example:
 
 - Setting the `addDocType` option to `true` registers an `after` hook, ensuring the output starts with `<!doctype html>`
 - Setting the `pretty` option to `true` register an `after` hook, formatting the output HTML before returning it.
-- There is also an "always-on" internal hook called `replaceCommentsHook` that makes it possible to render HTML comments using the `<Comment>` component.
+- There is also an "always-on" internal hook called `replaceInternalElementsHook` that makes it possible to render HTML comments using the `<Comment>` component, as well as writing raw HTML using the `<Root>` component.
 
 You can find the source of above hooks below:
 
 - [addDocTypeHook](../src/hooks/addDocTypeHook.ts)
 - [createPrettierHook](../src/hooks/createPrettierHook.ts)
-- [replaceCommentsHook](../src/hooks/replaceCommentsHook.ts)
+- [replaceInternalElementsHook](../src/hooks/replaceInternalElementsHook.ts)
 
 If you have a good idea for other hooks, PRs are more than welcome. 🚀
 
@@ -234,9 +238,67 @@ LogicfulTemplates.clearAllHooks();
 
 ## Special components
 
+### `<Root>`
+
+Allows you to hoist its children up a level. 
+
+Combined with its `dangerouslySetInnerHTML` prop, you could technically output raw HTML without rendering a parent.
+
+```TSX
+import type { FunctionComponent } from 'react'
+
+const MyComponent: FunctionComponent<{}> = () => {
+  return (
+    <html>
+      <Root dangerouslySetInnerHTML={{ __html: '<head><meta charset="utf-8"></head>' }} />
+    </html>
+  )
+}
+```
+
+```HTML
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+</html>
+```
+
+### `<CompileAndTransform>`
+
+Allows you to transform the output of its compiled children using the passed `transform` function.
+
+```TSX
+import type { FunctionComponent } from 'react';
+
+const MyComponent: FunctionComponent<{}> = () => {
+  return (
+    <CompileAndTransform
+      transform={(html: string) =>
+        html.replace('<div class="placeholder"></div>', '<div class="replacement">Hello World</div>')
+      }
+    >
+      <html>
+        <body>
+          <div className='placeholder' />
+        </body>
+      </html>
+    </CompileAndTransform>
+  );
+};
+```
+
+```HTML
+<html>
+  <body>
+    <div class="replacement">Hello World</div>
+  </body>
+</html>
+```
+
 ### `<Custom>`
 
-This component provides flexibility by allowing you to specify what the output tag name for an element will be, while also allowing you to specify any type of prop (or attribute) on the element. For example:
+Provides flexibility by allowing you to specify what the output tag name for an element will be, while also allowing you to specify any type of prop (or attribute) on the element. For example:
 
 ```TSX
 import type { FunctionComponent } from 'react'
@@ -253,8 +315,16 @@ const MyComponent: FunctionComponent<{}> = () => {
     />
   )
 }
+```
 
-// result: <amp-img alt="a view of the sea" src="/path/to/img" width="900" height="675" layout="responsive"></amp-img>
+```HTML
+<amp-img
+  alt="a view of the sea"
+  src="/path/to/img"
+  width="900"
+  height="675"
+  layout="responsive"
+></amp-img>
 ```
 
 You could even write an abstraction over the `<Custom>` component to provide better type hinting for the next person consuming your component. For example:
@@ -278,7 +348,9 @@ const AmpImg: FunctionComponent<AmpImgProps> = (props) => {
 
 ### `<Comment>`
 
-This component provides a way of adding HTML comments to the compiled output. You may only specify a `string`, `number`, or `boolean` as a `<Comment>`'s child. For example:
+Provides a way of adding HTML comments to the compiled output. 
+
+You may only specify a `string`, `number`, or `boolean` as a `<Comment>`'s child. For example:
 
 ```TSX
 import { Comment } from 'logicful-templates';
@@ -293,15 +365,19 @@ const MyComponent: FunctionComponent<{}> = () => {
     </div>
   )
 };
+```
 
-// result: <div><!-- Hello World --></div>
+```HTML
+<div>
+  <!-- Hello World -->
+</div>
 ```
 
 ## Bring your own types
 
 You could easily extend the default JSX types by defining your own types in a separate `typings.d.ts` file.
 
-- **Note**: If you're using `ts-node` to compile your templates, make sure to set `"files": true` in your `tsconfig.json`, else you may run into TypeScript errors.
+- **Note**: If you're using `ts-node` to compile your templates, make sure to set `{ "ts-node": { "files": true }` in your `tsconfig.json`, else you may run into TypeScript errors.
 
 ```TS
 export {}
@@ -309,9 +385,14 @@ export {}
 declare global {
   namespace JSX {
     interface IntrinsicElements {
+      // Add a new element:
       'custom-element': {
         [key: string]: any;
       };
+      // Or extend an existing React element:
+      html: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement> & {
+          amp4email: ""
+      }
     }
   }
 }
