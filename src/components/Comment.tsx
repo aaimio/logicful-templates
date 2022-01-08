@@ -1,7 +1,8 @@
 import { createElement } from 'react';
 import type { FunctionComponent } from 'react';
+import LogicfulTemplates from '..';
 
-export interface CommentProps {
+interface CommentProps {
   children: string | number | boolean;
 }
 
@@ -20,7 +21,14 @@ const Comment: FunctionComponent<CommentProps> = ({ children }) => {
   })();
 
   if (value) {
-    return createElement('logicful-templates-comment', { children: value });
+    const tagName = LogicfulTemplates._getIndexedInternalTagName('comment');
+
+    LogicfulTemplates.registerHook('after', (html) => {
+      return html.replace(`<${tagName}>`, '<!-- ').replace(`</${tagName}>`, ' -->');
+    });
+
+    // Use createElement to render the value so its value is escaped.
+    return createElement(tagName, { children: value });
   }
 
   return null;

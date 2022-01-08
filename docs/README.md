@@ -86,11 +86,8 @@ would compile into
   - [Function overview](#function-overview)
     - [`compileTemplate`](#compiletemplate)
     - [`registerHook`](#registerhook)
-    - [`unregisterHook`](#unregisterhook)
-    - [`clearAllHooks`](#clearallhooks)
 - [Special components](#special-components)
-  - [`<Root>`](#root)
-  - [`<CompileAndTransform>`](#compileandtransform)
+  - [`<Magic>` 🪄](#magic)
   - [`<Custom>`](#custom)
   - [`<Comment>`](#comment)
 - [Bring your own types](#bring-your-own-types)
@@ -193,7 +190,6 @@ You can find the source of above hooks below:
 
 - [addDocTypeHook](../src/hooks/addDocTypeHook.ts)
 - [createPrettierHook](../src/hooks/createPrettierHook.ts)
-- [replaceInternalElementsHook](../src/hooks/replaceInternalElementsHook.ts)
 
 If you have a good idea for other hooks, PRs are more than welcome. 🚀
 
@@ -217,101 +213,124 @@ LogicfulTemplates.registerHook('after', (html) => {
 });
 ```
 
-#### `unregisterHook`
+**Notes**
 
-**Unregisters a hook (by reference)**
-
-```TS
-const someHook = () => { /* Do some magic */ }
-
-LogicfulTemplates.registerHook('before', someHook);
-LogicfulTemplates.unregisterHook('before', someHook);
-```
-
-#### `clearAllHooks`
-
-**Clears all registered hooks**
-
-```TS
-LogicfulTemplates.clearAllHooks();
-```
+- Hooks are executed and then disposed, if you're calling `LogicfulTemplates.compileTemplate` multiple times and want to re-use the hooks, you'll have to register them again.
 
 ## Special components
 
-### `<Root>`
+### `<Magic>` 🪄
 
-Allows you to hoist its children up a level or set raw HTML **without rendering a parent**.
+This component allows you to perform magic tricks that normally wouldn't work when using React regularly.
 
-```TSX
-import type { FunctionComponent } from 'react'
+- Passing a `compileLater` prop allows you to compile the component after everything else is compiled
+- Passing a `hoist` prop allows you to hoist its children up a level, in other words, you could set outerHTML
 
-// Example 1
-const MyComponent: FunctionComponent<{}> = () => {
-  return (
-    <html>
-      <Root dangerouslySetInnerHTML={{ __html: '<head><meta charset="utf-8"></head>' }} />
-    </html>
-  )
-}
+**Compiling a component later**
 
-// Example 2
-const MyComponent: FunctionComponent<{}> = () => {
-  return (
-    <html>
-      <Root>
-        <head>
-          <meta charSet="utf-8">
-        </head>
-      </Root>
-    </html>
-  )
-}
-```
-
-```HTML
-<html>
-  <head>
-    <meta charset="utf-8">
-  </head>
-</html>
-```
-
-### `<CompileAndTransform>`
-
-Allows you to transform the output of its compiled children using the passed `transform` function.
-
-1. It compiles its children to an HTML string
-2. It executes the `transform` prop
-3. It injects the output of the `transform` call back into the DOM
-
-This could be useful if you rely on a function to execute after compiling a template, but the output of that function needs to be embedded into the final result, e.g. to ensure you've added all child components' styles to a [JSS Style Sheets Registry](https://cssinjs.org/jss-api?v=v10.9.0#style-sheets-registry) or to simply transform the compiled HTML of its children.
+This could be useful when you need to execute a function only at the end of compilation.
 
 ```TSX
 import type { FunctionComponent } from 'react';
 
-const MyComponent: FunctionComponent<{}> = () => {
+const Template: FunctionComponent<{}> = () => {
   return (
-    <CompileAndTransform
-      transform={(html: string) =>
-        html.replace('<div class="placeholder"></div>', '<div class="replacement">Hello World</div>')
-      }
-    >
-      <html>
-        <body>
-          <div className='placeholder' />
-        </body>
-      </html>
-    </CompileAndTransform>
+    <html>
+      <head>
+        <meta charSet='utf-8' />
+      </head>
+      <body>
+        <div className="header">
+          <Magic compileLater>
+            {() => {
+              executeSomeFunctionLast();
+              const header = 'I am executed last';
+              return <h1>{header}</h1>
+            }}
+          </Magic>
+        </div>
+        <div className="content">
+          <p>Some text goes here.</p>
+        </div>
+      </body>
+    </html>
+  );
+}
+```
+
+You can also specify a priority level by passing a number instead of `true`, the "compiler" will respect these values and execute the `<Magic compilerLater={number}>` components in the correct order.
+
+```TSX
+import type { FunctionComponent } from 'react';
+
+const Template: FunctionComponent<{}> = () => {
+  return (
+    <Magic compileLater={2}>
+      {() => {
+        executeSomeFunction();
+        return <h1>I am executed 2nd!</h1>
+      }}
+    </Magic>
+    <Magic compileLater={1}>
+      {() => {
+        executeSomeFunction();
+        return <h1>I am executed 1st!</h1>
+      }}
+    </Magic>
+  );
+}
+```
+
+**Notes**
+
+- You are **not** required to pass a function as the `<Magic>` component's children, but they allow you to execute functions. Passing regular children (i.e. React elements) will work fine.
+- If you return another `<Magic>` component within a child render function of another `<Magic>` component, the priority number will only count for that level of `<Magic>` components. You normally wouldn't run into this scenario.
+
+**Hoisting a component / setting outerHTML**
+
+By itself `<Magic hoist>` isn't very useful, but combined with the `dangerouslySetInnerHTML` prop you can technically set this element's outerHTML. This could be useful if you need to inline non-standard bits into the DOM, for example a stylesheet, custom elements, or HTML comments.
+
+```TSX
+import type { FunctionComponent } from 'react';
+
+const Template: FunctionComponent<{}> = () => {
+  return (
+    <>
+      <Magic hoist dangerouslySetInnerHTML={{ __html: '<!-- A stylesheet below -->' }} />
+      <style>
+        <Magic
+          hoist
+          dangerouslySetInnerHTML={{
+            __html: `
+          body {
+            background-color: linen;
+          }
+
+          h1 {
+            color: maroon;
+            margin-left: 40px;
+          }
+        `,
+          }}
+        />
+      </style>
+    </>
   );
 };
 ```
 
 ```HTML
-<html>
-  <body>
-    <div class="replacement">Hello World</div>
-  </body>
-</html>
+<!-- A stylesheet below -->
+<style>
+  body {
+    background-color: linen;
+  }
+
+  h1 {
+    color: maroon;
+    margin-left: 40px;
+  }
+</style>
 ```
 
 ### `<Custom>`

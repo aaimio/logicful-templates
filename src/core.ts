@@ -1,135 +1,128 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { addDocTypeHook, createPrettierHook, replaceInternalElementsHook } from './hooks';
-
-import type { ReactElement } from 'react';
+import { addDocTypeHook, createPrettierHook } from './hooks';
+import { ReactElement } from 'react';
 import type { Options as PrettierOptions } from 'prettier';
 
 type HookTiming = 'before' | 'after';
-type BeforeHook = () => void;
-type AfterHook = (html: string) => string;
+type TransformHTMLFunction = (html: string) => string;
+type VoidFunction = () => void;
+type Hook<T extends VoidFunction | TransformHTMLFunction> = {
+  priority: true | number;
+  callback: T;
+  dispose: VoidFunction;
+};
 
 class LogicfulTemplates {
-  private currentPrettierHook: AfterHook | null = null;
-  private beforeCompileTemplateCallbacks: BeforeHook[] = [];
-  private afterCompileTemplateCallbacks: AfterHook[] = [replaceInternalElementsHook];
+  private beforeHooks: Hook<VoidFunction>[] = [];
+  private afterHooks: Hook<TransformHTMLFunction>[] = [];
+  private renderIdx = 0;
 
-  private executeHooks(timing: Extract<HookTiming, 'before'>): BeforeHook;
-  private executeHooks(timing: Extract<HookTiming, 'after'>): AfterHook;
-  private executeHooks(timing: HookTiming): any {
-    switch (timing) {
-      case 'before': {
-        // Before hooks are functions executed before compilation, they don't modify HTML.
-        return () => {
-          for (let i = 0; i < this.beforeCompileTemplateCallbacks.length; i++) {
-            const targetHook = this.beforeCompileTemplateCallbacks[i];
+  /**
+   * Creates and returns a special tag name /w a render index. These tag names
+   * are used to "render" placeholder elements that are eventually replaced with
+   * their expected ones.
+   * @returns A render index
+   */
+  public _getIndexedInternalTagName(prefix: string) {
+    return `lt-${prefix}-${this.renderIdx++}`;
+  }
 
-            if (typeof targetHook === 'function') {
-              targetHook();
-            }
+  /**
+   * Returns a function that can be called to execute compilation hooks
+   * @param timing Which hooks to execute, either `before` or `after`
+   */
+  private executeHooks(timing: Extract<HookTiming, 'before'>): void;
+  private executeHooks(timing: Extract<HookTiming, 'after'>, html: string): string;
+  private executeHooks(timing: HookTiming, html?: any): any {
+    // We keep looping over beforeHooks + afterHooks arrays as there may be nested
+    // components registering their own hooks after the initial call has already been
+    // executed. For example, two nested <Magic> components having functions as children.
+
+    if (timing === 'before') {
+      // Before hooks are functions executed before compilation that don't transform HTML
+      while (this.beforeHooks.length) {
+        this.beforeHooks.forEach((hook) => {
+          hook.dispose();
+
+          if (typeof hook.callback === 'function') {
+            hook.callback();
           }
-        };
+        });
       }
-      case 'after': {
-        // After hooks are functions executed after compilation that transform the HTML.
-        return (html: string) => {
-          let targetHtml = html;
+    } else if (timing === 'after') {
+      let transformedHTML = html;
 
-          for (let i = 0; i < this.afterCompileTemplateCallbacks.length; i++) {
-            const hook = this.afterCompileTemplateCallbacks[i];
+      // After hooks are functions executed after compilation that transform HTML
+      while (this.afterHooks.length) {
+        this.afterHooks.forEach((hook) => {
+          hook.dispose();
 
-            if (typeof hook === 'function') {
-              targetHtml = hook(targetHtml);
-            }
+          if (typeof hook.callback === 'function') {
+            transformedHTML = hook.callback(transformedHTML);
           }
-
-          return targetHtml;
-        };
+        });
       }
-      default:
-        break;
+
+      return transformedHTML;
     }
   }
 
   /**
    * Registers a callback that is executed before or after compiling a template
    * @param timing When to execute the callback, either `before` or `after`:
-   * - `before` callbacks are void functions executed before compilation.
-   * - `after` callbacks are function that receive a HTML string and should
-   *   return a transformed HTML string.
-   * @param callback The callback to execute before or after compiling a
-   * template
+   *   - `before` callbacks are executed before compilation.
+   *   - `after` callbacks receive a HTML string and return transformed HTML
+   * @param callback callback to execute before or after compiling a template
+   * @returns A disposer function that can be called to dispose the hook
    */
-  public registerHook(timing: Extract<HookTiming, 'before'>, callback: BeforeHook): void;
-  public registerHook(timing: Extract<HookTiming, 'after'>, callback: AfterHook): void;
-  public registerHook(timing: HookTiming, callback: (...args: any) => any) {
-    switch (timing) {
-      case 'before': {
-        if (this.beforeCompileTemplateCallbacks.findIndex((cb) => cb === callback) === -1) {
-          this.beforeCompileTemplateCallbacks.push(callback);
-        }
-        break;
+  public registerHook(timing: Extract<HookTiming, 'before'>, callback: VoidFunction, priority?: number): void;
+  public registerHook(timing: Extract<HookTiming, 'after'>, callback: TransformHTMLFunction, priority?: number): void;
+  public registerHook(timing: HookTiming, callback: (...args: any) => any, priority?: number): void {
+    const sortHookArray = (
+      a: Hook<VoidFunction | TransformHTMLFunction>,
+      b: Hook<VoidFunction | TransformHTMLFunction>
+    ) => {
+      // Number-weighted priorities execute later than regular (= "true") priorities
+      if (a.priority === true && typeof b.priority === 'number') {
+        return -1;
       }
-      case 'after': {
-        if (this.afterCompileTemplateCallbacks.findIndex((cb) => cb === callback) === -1) {
-          this.afterCompileTemplateCallbacks.push(callback);
-        }
-        break;
+      // Higher numbers execute later than lower ones
+      if (typeof a.priority === 'number' && typeof b.priority === 'number') {
+        return a.priority - b.priority;
       }
-      default:
-        break;
+
+      return 0;
+    };
+
+    if (timing === 'before') {
+      this.beforeHooks.push({
+        priority: priority ?? true,
+        callback,
+        dispose: () => {
+          this.beforeHooks = this.beforeHooks.filter((hook) => hook.callback !== callback);
+        },
+      });
+
+      this.beforeHooks.sort(sortHookArray);
+    } else if (timing === 'after') {
+      this.afterHooks.push({
+        priority: priority ?? true,
+        callback,
+        dispose: () => {
+          this.afterHooks = this.afterHooks.filter((hook) => hook.callback !== callback);
+        },
+      });
+
+      this.afterHooks.sort(sortHookArray);
     }
   }
 
   /**
-   * Clears all hooks (except internal ones) from the template callback arrays
+   * Clears all hooks
    */
   public clearAllHooks() {
-    this.beforeCompileTemplateCallbacks.length = 0;
-    this.afterCompileTemplateCallbacks.length = 0;
-    this.afterCompileTemplateCallbacks.push(replaceInternalElementsHook);
-  }
-
-  public unregisterHook(timing: Extract<HookTiming, 'before'>, callback: BeforeHook): void;
-  public unregisterHook(timing: Extract<HookTiming, 'after'>, callback: AfterHook): void;
-  public unregisterHook(timing: HookTiming, callback: Function) {
-    let targetCallbacks: typeof this.beforeCompileTemplateCallbacks | typeof this.afterCompileTemplateCallbacks;
-
-    switch (timing) {
-      case 'before': {
-        targetCallbacks = this.beforeCompileTemplateCallbacks;
-        break;
-      }
-      case 'after': {
-        targetCallbacks = this.afterCompileTemplateCallbacks;
-        break;
-      }
-      default: {
-        targetCallbacks = [];
-        break;
-      }
-    }
-
-    const idx = targetCallbacks.findIndex((cb) => cb === callback);
-
-    if (idx > -1) {
-      targetCallbacks.splice(idx, 1);
-    }
-  }
-
-  /**
-   * Compiles a template to HTML, without executing any hooks (this excludes internal hooks).
-   * @param element The component to compile, e.g. `<Template />`
-   * @returns The compiled HTML
-   */
-  public compileTemplateWithoutHooks(element: ReactElement | (() => ReactElement)) {
-    const targetElement = typeof element === 'function' ? element() : element;
-
-    let html: string;
-
-    html = renderToStaticMarkup(targetElement);
-    html = replaceInternalElementsHook(html);
-
-    return html;
+    this.beforeHooks = [];
+    this.afterHooks = [];
   }
 
   /**
@@ -146,34 +139,26 @@ class LogicfulTemplates {
       prettyOptions?: PrettierOptions;
     } = {}
   ): string {
-    const options: Parameters<typeof this.compileTemplate>[1] = { addDocType: false, pretty: false, ...optOptions };
+    const options: Parameters<typeof this.compileTemplate>[1] = {
+      addDocType: false,
+      pretty: false,
+      ...optOptions,
+    };
 
-    // Unregister built-in hooks for each call to `compileTemplate` to ensure
-    // they're not ran accidentally if a user first opted in to them, then opted
-    // out to them.
-    this.unregisterHook('after', addDocTypeHook);
-
-    if (typeof this.currentPrettierHook === 'function') {
-      this.unregisterHook('after', this.currentPrettierHook);
-    }
-
-    // Register built-in hooks if user opted into these through `optOptions`
     if (options.addDocType) {
       this.registerHook('after', addDocTypeHook);
     }
 
     if (options.pretty) {
-      this.currentPrettierHook = createPrettierHook(optOptions.prettyOptions || {});
-      this.registerHook('after', this.currentPrettierHook);
+      this.registerHook('after', createPrettierHook(optOptions.prettyOptions || {}));
     }
 
-    this.executeHooks('before')();
+    this.executeHooks('before');
 
-    const targetElement = typeof element === 'function' ? element() : element;
     let html: string;
 
-    html = renderToStaticMarkup(targetElement);
-    html = this.executeHooks('after')(html);
+    html = renderToStaticMarkup(typeof element === 'function' ? element() : element);
+    html = this.executeHooks('after', html);
 
     return html;
   }
