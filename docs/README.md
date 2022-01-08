@@ -87,7 +87,7 @@ would compile into
     - [`compileTemplate`](#compiletemplate)
     - [`registerHook`](#registerhook)
 - [Special components](#special-components)
-  - [`<Magic>` 🪄](#magic)
+  - [`<Magic>`](#magic-) 🧙
   - [`<Custom>`](#custom)
   - [`<Comment>`](#comment)
 - [Bring your own types](#bring-your-own-types)
@@ -219,7 +219,7 @@ LogicfulTemplates.registerHook('after', (html) => {
 
 ## Special components
 
-### `<Magic>` 🪄
+### `<Magic>` 🧙
 
 This component allows you to perform magic tricks that normally wouldn't work when using React regularly.
 
