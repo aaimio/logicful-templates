@@ -4,7 +4,7 @@
 
 A simple library allowing you to build HTML templates using React & JSX.
 
-JSX is a JavaScript syntax extension that [comes with the full power of JavaScript](https://reactjs.org/docs/introducing-jsx.html). It allows you to use if statements, loops, variables, and so on. By using React & JSX we can build logicful HTML templates.
+JSX is a JavaScript syntax extension that comes with the full power of JavaScript. It allows you to use if statements, loops, variables, and so on. By using React & JSX (and [a hint of magic](#magic-)) we can build logicful HTML templates.
 
 <details>
   <summary>Show example</summary>
@@ -87,7 +87,7 @@ would compile into
     - [`compileTemplate`](#compiletemplate)
     - [`registerHook`](#registerhook)
 - [Special components](#special-components)
-  - [`<Magic>` 🪄](#magic)
+  - [`<Magic>`](#magic-) 🧙
   - [`<Custom>`](#custom)
   - [`<Comment>`](#comment)
 - [Bring your own types](#bring-your-own-types)
@@ -149,7 +149,7 @@ Add the configuration below to your Babel configuration file:
 
 **Compiles a component and spits out an HTML string.**
 
-A function that compiles a React component into a plain HTML string. This is simply a wrapper over `react-dom/server`'s `renderToStaticMarkup` function, allowing us to [specify `before` and `after` compilation hooks](#registerHook).
+A function that compiles a React component into a plain HTML string. This is simply a wrapper over `react-dom/server`'s `renderToStaticMarkup` function, allowing us to [specify `before` and `after` compilation hooks](#registerHook), which also power the [magic components](#magic-).
 
 **Arguments**
 
@@ -184,12 +184,16 @@ For example:
 
 - Setting [`addDocType`](#compiletemplate) to `true` registers an `after` hook, ensuring the output starts with `<!doctype html>`
 - Setting [`pretty`](#compiletemplate) to `true` registers an `after` hook, tidying up HTML before returning it.
-- There is also an "always-on" internal hook called `replaceInternalElementsHook` that makes it possible to render HTML comments using the `<Comment>` component, as well as writing raw HTML using the `<Root>` component.
 
 You can find the source of above hooks below:
 
 - [addDocTypeHook](../src/hooks/addDocTypeHook.ts)
 - [createPrettierHook](../src/hooks/createPrettierHook.ts)
+
+Internally hooks are being used to make `<Magic>` and `<Comment>` components possible, they simply render a placeholder which is then replaced when the `after` hook is executed. You can check out their implementation below:
+
+- [`<Magic>`](../src/components/Magic.tsx)
+- [`<Comment>`](../src/components/Comment.tsx)
 
 If you have a good idea for other hooks, PRs are more than welcome. 🚀
 
@@ -215,22 +219,27 @@ LogicfulTemplates.registerHook('after', (html) => {
 
 **Notes**
 
-- Hooks are executed and then disposed, if you're calling `LogicfulTemplates.compileTemplate` multiple times and want to re-use the hooks, you'll have to register them again.
+- Hooks are executed and then disposed of, if you're calling `LogicfulTemplates.compileTemplate` multiple times and want to re-use the hooks, you'll have to register them again.
 
 ## Special components
 
-### `<Magic>` 🪄
+### `<Magic>` 🧙
 
-This component allows you to perform magic tricks that normally wouldn't work when using React regularly.
+This component allows you to perform magic that normally wouldn't work when using React regularly.
 
-- Passing a `compileLater` prop allows you to compile the component after everything else is compiled
-- Passing a `hoist` prop allows you to hoist its children up a level, in other words, you could set outerHTML
+| prop                      | type                 | description                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `compileLater`            | boolean OR number    | Allows you to compile the component after everything else is compiled. If a `boolean` is passed, it will be rendered after every other regular component. If you have multiple `<Magic compileLater>` components, the regular order is maintained (i.e. based on which one is executed first). If a `number` is passed, the number will be considered as the priority of when to render the component, priority `1` is considered higher than priority `99`. |
+| `children`                | ReactNode            | React children                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `dangerouslySetInnerHTML` | { \_\_html: string } | Sets this element's innerHTML (which becomes outerHTML as `<Magic>` itself does not render an element)                                                                                                                                                                                                                                                                                                                                                       |
+| `hoist`                   | boolean              | Allows you to hoist its children up a level, i.e. you could set this element's outerHTML                                                                                                                                                                                                                                                                                                                                                                     |
 
 **Compiling a component later**
 
 This could be useful when you need to execute a function only at the end of compilation.
 
 ```TSX
+import { Magic } from 'logicful-templates';
 import type { FunctionComponent } from 'react';
 
 const Template: FunctionComponent<{}> = () => {
@@ -261,6 +270,7 @@ const Template: FunctionComponent<{}> = () => {
 You can also specify a priority level by passing a number instead of `true`, the "compiler" will respect these values and execute the `<Magic compilerLater={number}>` components in the correct order.
 
 ```TSX
+import { Magic } from 'logicful-templates';
 import type { FunctionComponent } from 'react';
 
 const Template: FunctionComponent<{}> = () => {
@@ -291,6 +301,7 @@ const Template: FunctionComponent<{}> = () => {
 By itself `<Magic hoist>` isn't very useful, but combined with the `dangerouslySetInnerHTML` prop you can technically set this element's outerHTML. This could be useful if you need to inline non-standard bits into the DOM, for example a stylesheet, custom elements, or HTML comments.
 
 ```TSX
+import { Magic } from 'logicful-templates';
 import type { FunctionComponent } from 'react';
 
 const Template: FunctionComponent<{}> = () => {
@@ -337,11 +348,17 @@ const Template: FunctionComponent<{}> = () => {
 
 Provides flexibility by allowing you to specify what the output tag name for an element will be, while also allowing you to specify any type of prop (or attribute) on the element.
 
+| prop            | type                | description                                         |
+| --------------- | ------------------- | --------------------------------------------------- |
+| `tagName`       | string (lowercased) | A lowercased custom tag name for the custom element |
+| `[key: string]` | any                 | The `<Custom>` component accepts any type of props  |
+
 - **Note**: If you're using plain JS you might not need this as React accepts custom elements, but it might be useful if you're using TypeScript and don't want to [extend the `JSX.IntrinsicElements` interface](#bring-your-own-types).
 
 For example:
 
 ```TSX
+import { Custom } from 'logicful-templates';
 import type { FunctionComponent } from 'react'
 
 const MyComponent: FunctionComponent<{}> = () => {
@@ -391,7 +408,9 @@ const AmpImg: FunctionComponent<AmpImgProps> = (props) => {
 
 Provides a way of adding HTML comments to the compiled output.
 
-You may only specify a `string`, `number`, or `boolean` as a `<Comment>`'s child. For example:
+| prop       | type                        | description                      |
+| ---------- | --------------------------- | -------------------------------- |
+| `children` | string OR number OR boolean | The content of the HTML comment. |
 
 ```TSX
 import { Comment } from 'logicful-templates';
