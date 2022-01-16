@@ -267,7 +267,7 @@ const Template: FunctionComponent<{}> = () => {
 }
 ```
 
-You can also specify a priority level by passing a number instead of `true`, the "compiler" will respect these values and execute the `<Magic compilerLater={number}>` components in the correct order.
+You can also specify a priority level by passing a number instead of `true`, the "compiler" will respect these values and execute the `<Magic compileLater={number}>` components in the correct order.
 
 ```TSX
 import { Magic } from 'logicful-templates';

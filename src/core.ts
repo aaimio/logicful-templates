@@ -139,6 +139,9 @@ class LogicfulTemplates {
       prettyOptions?: PrettierOptions;
     } = {}
   ): string {
+    // Keep below line at the top as creating the element might register hooks
+    // that are required to be executed before registering the options hooks.
+    const targetElement = typeof element === 'function' ? element() : element;
     const options: Parameters<typeof this.compileTemplate>[1] = {
       addDocType: false,
       pretty: false,
@@ -157,7 +160,7 @@ class LogicfulTemplates {
 
     let html: string;
 
-    html = renderToStaticMarkup(typeof element === 'function' ? element() : element);
+    html = renderToStaticMarkup(targetElement);
     html = this.executeHooks('after', html);
 
     return html;
