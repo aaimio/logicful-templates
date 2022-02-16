@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/aaimio/logicful-templates/branch/master/graph/badge.svg?token=9R5TVD0BA6)](https://codecov.io/gh/aaimio/logicful-templates) ![build](https://github.com/aaimio/logicful-templates/actions/workflows/build.yml/badge.svg)
 
-A wrapper over React's `renderToStaticMarkup` for building logicful templates, using JSX, [transform hooks](#registerhook), and [a hint of magic](#magic-). 🧙
+A wrapper over React's `renderToStaticMarkup` for building logicful HTML templates, using JSX, [transform hooks](#registerhook), and [a hint of magic](#magic-). 🧙
 
 <details>
   <summary>Show example</summary>
