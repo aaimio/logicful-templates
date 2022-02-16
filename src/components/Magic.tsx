@@ -53,7 +53,9 @@ const Magic: FunctionComponent<HoistProps | CompileLaterProps> = ({
       'after',
       (html: string) => {
         const compiled = LogicfulTemplates.compileTemplate(<>{getChildren()}</>);
-        return html.replace(`<${tagName}>`, compiled).replace(`</${tagName}>`, '');
+        return html
+          .replace(new RegExp(`<\s*?${tagName}\s*?>`), compiled)
+          .replace(new RegExp(`<\s*?/${tagName}\s*?>`), '');
       },
       priority
     );
@@ -67,7 +69,7 @@ const Magic: FunctionComponent<HoistProps | CompileLaterProps> = ({
   const tagName = LogicfulTemplates._getIndexedInternalTagName('magic-hoist');
 
   LogicfulTemplates.registerHook('after', (html) => {
-    return html.replace(`<${tagName}>`, '').replace(`</${tagName}>`, '');
+    return html.replace(new RegExp(`<\s*?${tagName}\s*?>`), '').replace(new RegExp(`<\s*?/${tagName}\s*?>`), '');
   });
 
   return createElement(tagName, { children: getChildren(), dangerouslySetInnerHTML });

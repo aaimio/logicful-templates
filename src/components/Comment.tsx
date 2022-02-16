@@ -24,7 +24,9 @@ const Comment: FunctionComponent<CommentProps> = ({ children }) => {
     const tagName = LogicfulTemplates._getIndexedInternalTagName('comment');
 
     LogicfulTemplates.registerHook('after', (html) => {
-      return html.replace(`<${tagName}>`, '<!-- ').replace(`</${tagName}>`, ' -->');
+      return html
+        .replace(new RegExp(`<\s*?${tagName}\s*?>`), '<!-- ')
+        .replace(new RegExp(`<\s*?/${tagName}\s*?>`), ' -->');
     });
 
     // Use createElement to render the value so its value is escaped.
