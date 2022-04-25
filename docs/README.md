@@ -289,6 +289,8 @@ const Template: FunctionComponent<{}> = () => {
 }
 ```
 
+A real life scenario could be to gather a bunch of JSS styles that are generated on a component's first render. 
+
 **Notes**
 
 - You are **not** required to pass a function as the `<Magic>` component's children, but they allow you to execute functions. Passing regular children (i.e. React elements) will work fine.
