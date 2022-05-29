@@ -294,7 +294,7 @@ A real life scenario could be to gather a bunch of JSS styles that are generated
 **Notes**
 
 - You are **not** required to pass a function as the `<Magic>` component's children, but they allow you to execute functions. Passing regular children (i.e. React elements) will work fine.
-- If you return another `<Magic>` component within a child render function of another `<Magic>` component, the priority number will only count for that level of `<Magic>` components. You normally wouldn't run into this scenario.
+- If you return another `<Magic>` component within a child render function of another `<Magic>` component, the priority number will only count for that level of `<Magic>` components (think JavaScript event loop). You normally wouldn't run into this scenario.
 
 **Hoisting a component / setting outerHTML**
 
@@ -385,7 +385,7 @@ const MyComponent: FunctionComponent<{}> = () => {
 ></amp-img>
 ```
 
-You could even write an abstraction over the `<Custom>` component to provide better type hinting for the next person consuming your component. For example:
+You could write an abstraction over the `<Custom>` component to provide better type hinting for the next person consuming your component. For example:
 
 ```TS
 import { Custom } from 'logicful-templates';
